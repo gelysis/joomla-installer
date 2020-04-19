@@ -1,0 +1,13 @@
+{
+    "name": "gelysis/joomla-installer",
+    "description": "Composer Installer for Joomla",
+    "license": "BSD-3-Clause",
+    "require": {
+        "php": "^7.3.0"
+    },
+    "scripts": {
+        "pre-update-cmd": [
+            "src/pre-create.php"
+        ]
+    }
+}
