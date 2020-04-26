@@ -3,12 +3,20 @@ cd "$(dirname "$0")"
 
 REPOSITORY=$1
 VERSION=$2
+FOLDER=$3
 
 cd ..
 git config --global advice.detachedHead false
-git clone --quiet $REPOSITORY --branch $VERSION --depth 1 --single-branch > /dev/null
-composer install
+git clone --quiet $REPOSITORY --branch $VERSION --depth 1 --single-branch $FOLDER > /dev/null
 git config --global advice.detachedHead true
+
+cd $FOLDER
+composer install
+rm -rf ./git
+
+cd ..
+rm -rf composer.*
+mv $FOLDER/composer.* ./
 
 cd ./public
 ln -s ../joomla-cms/index.php index.php

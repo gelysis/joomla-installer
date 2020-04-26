@@ -14,54 +14,109 @@ use Composer\Script\Event;
 class CmsInstall
 {
 
-    public static function execute(Event $event)
-    {
-        /** @var \Composer\IO\ConsoleIO $io */
-        $io = $event->getIO();
+    /** @var \Composer\IO\ConsoleIO self::$io */
+    protected static $io;
 
-        $references = $versions = [];
-        $exactMatch = false;
+
+    /**
+     * @param \Composer\Script\Event $event
+     */
+    public static function execute(Event $event): void
+    {
+        self::$io = $event->getIO();
 
         $repository = 'https://github.com/joomla/joomla-cms.git';
-        $version = $io->ask('Joomla version: ');
+        $folder = strstr(substr(strrchr($repository, '/'), 1), '.', true);
+        $allVersions = self::getAllVersions($repository);
+
+        $versions = self::getFilteredVersions($allVersions);
+
+        if (count($versions) === 1) {
+            $version = current($versions);
+            self::$io->write('Klone und installiere Joomla CMS '.$version
+                .' / Cloning and installing Joomla CMS '.$version.' ...');
+            exec(__DIR__.'/install-cms.sh '.$repository.' '.$version.' '.$folder);
+
+        } else {
+            self::$io->write('Diese Version existiert nicht. / Version does not exists.');
+            if (!empty($versions)) {
+                self::$io->write('Meinten Sie: / Did you mean: '.implode(', ', $versions));
+            }
+        }
+    }
+
+    /**
+     * @param \Composer\Script\Event $event
+     */
+    public static function cleanUp(Event $event): void
+    {
+        self::$io = $event->getIO();
+        self::$io->write(PHP_EOL.'Beende die Installation ...'.' / Finalising set up ...');
+
+        $file = dirname(__DIR__).'/composer.json';
+
+        if (file_exists($file) && is_writable($file)) {
+            $composerJson = file_get_contents($file);
+            $composerJson = str_replace('"libraries/vendor"', '"joomla-cms/libraries/vendor"', $composerJson);
+            file_put_contents($file, $composerJson);
+        }
+
+        self::$io->write(PHP_EOL);
+    }
+
+    /**
+     * @param string $repository
+     * @return string[]
+     */
+    protected static function getAllVersions(string $repository): array
+    {
+        $versions = $references = [];
+        $semanticVersioning = '#^([0-9]+\.){1,2}([0-9]+|-[a-z]){2}\w*$#';
 
         $command = 'git ls-remote --heads --refs --tags --sort "v:refname" '.$repository.' | sed "s/.*\///"';
         exec($command, $references);
 
+
+        foreach ($references as $key => $ref) {
+            if (preg_match($semanticVersioning, $ref)) {
+                $versions[] = $references[$key];
+            }
+        }
+
+        return $versions;
+    }
+
+    /**
+     * @param array $allVersions
+     * @return string[]
+     */
+    protected static function getFilteredVersions(array $allVersions): array
+    {
+        $desiredVersion = self::$io->ask('Joomla version (latest by default): ');
+
+        $versions = [];
         $stableVersion = '#^([0-9]+\.){2}[0-9]+$#';
-        $semanticVersioning = '#^([0-9]+\.){1,2}([0-9]+|-[a-z]){2}\w*$#';
 
-        if ($version === NULL) {
-            foreach ($references as $key => $ref) {
-                if (!preg_match($stableVersion, $ref)) {
-                    unset($references[$key]);
+        if (empty($desiredVersion)) {
+            foreach ($allVersions as $version) {
+                if (preg_match($stableVersion, $version)) {
+                    $versions[] = $version;
                 }
             }
+            $versions = array_slice($versions, -1);
 
-            $exactMatch = count($references) > 0;
-            if ($exactMatch) {
-                $version = array_pop($references);
-            }
-        } elseif (in_array($version, $references)) {
-            $exactMatch = true;
+        } elseif (in_array($desiredVersion, $allVersions)) {
+            $versions = [$desiredVersion];
+
         } else {
-            foreach ($references as $key => $ref) {
-                if (preg_match($semanticVersioning, $ref) && strpos($ref, $version) === 0) {
-                    $versions[] = $ref;
+            foreach ($allVersions as $version) {
+                if (strpos($version, $desiredVersion) === 0) {
+                    $versions[] = $version;
                 }
             }
         }
 
-        if ($exactMatch) {
-            $io->write('Klone und installiere Joomla CMS '.$version
-                .' / Cloning and installing Joomla CMS '.$version.' ...');
-            exec(__DIR__.'/install-cms.sh '.$repository.' '.$version);
-        } else {
-            $io->write('Diese Version existiert nicht. / Version does not exists.');
-            if (!empty($versions)) {
-                $io->write('Meinten Sie: / Did you mean: '.implode(', ', $versions));
-            }
-        }
+        return $versions;
     }
 
 }

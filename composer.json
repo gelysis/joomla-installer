@@ -16,6 +16,9 @@
     "scripts": {
         "post-root-package-install": [
             "GjInstaller\\CmsInstall::execute"
+        ],
+        "post-create-project-cmd": [
+            "GjInstaller\\CmsInstall::cleanUp"
         ]
     }
 }
