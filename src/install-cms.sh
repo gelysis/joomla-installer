@@ -10,7 +10,7 @@ git config --global advice.detachedHead false
 git clone --quiet $REPOSITORY --branch $VERSION --depth 1 --single-branch $FOLDER > /dev/null
 git config --global advice.detachedHead true
 
-rm -rf $FOLDER/.git composer.*
+rm -rf composer.* src vendor $FOLDER/.git
 mv $FOLDER/composer.* ./
 
 cd ./public

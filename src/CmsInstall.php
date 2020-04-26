@@ -39,11 +39,17 @@ class CmsInstall
             exec(__DIR__.'/install-cms.sh '.$repository.' '.$version.' '.$folder);
 
             self::adjustComposerJson();
+
+            $message = 'Joomla wurde erfolgreich installiert. Folgen Sie bitte nun den Installationshinweisen in README.md.'
+                .' / Joomla has been successfully installed. Please follow the installation instructions in README.md.';
+            self::$io->write($message);
         } else {
             self::$io->write('Diese Version existiert nicht. / Version does not exists.');
             if (!empty($versions)) {
                 self::$io->write('Meinten Sie: / Did you mean: '.implode(', ', $versions));
             }
+
+            self::$io->write('Installation ist fehlgeschlagen.' .' / Installation failed.');
         }
     }
 
