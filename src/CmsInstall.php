@@ -14,7 +14,7 @@ use Composer\Script\Event;
 class CmsInstall
 {
 
-    public function execute(Event $event)
+    public static function execute(Event $event)
     {
         /** @var \Composer\IO\ConsoleIO $io */
         $io = $event->getIO();
