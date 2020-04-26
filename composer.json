@@ -14,7 +14,7 @@
         }
     },
     "scripts": {
-        "pre-install-cmd": [
+        "post-root-package-install": [
             "GjInstaller\\CmsInstall::execute"
         ]
     }
