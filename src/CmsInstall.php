@@ -20,6 +20,7 @@ class CmsInstall
 
     /**
      * @param \Composer\Script\Event $event
+     * @return void
      */
     public static function execute(Event $event): void
     {
@@ -37,31 +38,13 @@ class CmsInstall
                 .' / Cloning and installing Joomla CMS '.$version.' ...');
             exec(__DIR__.'/install-cms.sh '.$repository.' '.$version.' '.$folder);
 
+            self::adjustComposerJson();
         } else {
             self::$io->write('Diese Version existiert nicht. / Version does not exists.');
             if (!empty($versions)) {
                 self::$io->write('Meinten Sie: / Did you mean: '.implode(', ', $versions));
             }
         }
-    }
-
-    /**
-     * @param \Composer\Script\Event $event
-     */
-    public static function cleanUp(Event $event): void
-    {
-        self::$io = $event->getIO();
-        self::$io->write(PHP_EOL.'Beende die Installation ...'.' / Finalising set up ...');
-
-        $file = dirname(__DIR__).'/composer.json';
-
-        if (file_exists($file) && is_writable($file)) {
-            $composerJson = file_get_contents($file);
-            $composerJson = str_replace('"libraries/vendor"', '"joomla-cms/libraries/vendor"', $composerJson);
-            file_put_contents($file, $composerJson);
-        }
-
-        self::$io->write(PHP_EOL);
     }
 
     /**
@@ -117,6 +100,23 @@ class CmsInstall
         }
 
         return $versions;
+    }
+
+    /**
+     * @return void
+     */
+    protected static function adjustComposerJson(): void
+    {
+        self::$io->write(PHP_EOL.'Beende die Installation ...'.' / Finalising set up ...');
+        $file = dirname(__DIR__).'/composer.json';
+
+        if (file_exists($file) && is_writable($file)) {
+            $composerJson = file_get_contents($file);
+            $composerJson = str_replace('"libraries/vendor"', '"joomla-cms/libraries/vendor"', $composerJson);
+            file_put_contents($file, $composerJson);
+        }
+
+        self::$io->write(PHP_EOL);
     }
 
 }
