@@ -5,9 +5,17 @@
     "require": {
         "php": "^7.3.0"
     },
+    "require-dev": {
+        "composer/composer": "dev-master"
+    },
+    "autoload": {
+        "psr-4": {
+            "GjInstaller\\": "./src"
+        }
+    },
     "scripts": {
         "pre-install-cmd": [
-            "src/pre-install.sh"
+            "GjInstaller\\CmsInstall::execute"
         ]
     }
 }
