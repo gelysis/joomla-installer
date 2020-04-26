@@ -3,14 +3,12 @@
 
 print PHP_EOL.'Checking ...'.PHP_EOL;
 
-if (count($_SERVER['argv']) < 2) {
-    print 'composer create-project gelysis/joomla-installer <project folder> <semantic version>'.PHP_EOL;
-} else {
+if (count($_SERVER['argv']) == 2) {
     $references = $versions = [];
     $exactMatch = false;
 
     $repository = 'https://github.com/joomla/joomla-cms.git';
-    $version = ($_SERVER['argv'][2] ?? NULL);
+    $version = ($_SERVER['argv'][1] ?? NULL);
 
     $command = 'git ls-remote --heads --refs --tags --sort "v:refname" '.$repository.' | sed "s/.*\///"';
     exec($command, $references);
@@ -42,13 +40,15 @@ if (count($_SERVER['argv']) < 2) {
     if ($exactMatch) {
         print 'Klone und installiere Joomla CMS '.$version
             .' / Cloning and installing Joomla CMS '.$version.' ...'.PHP_EOL;
-        exec(__DIR__.'/setup-application.sh '.$repository.' '.$version);
+        exec(__DIR__.'/install.sh '.$repository.' '.$version);
     } else {
         print 'Diese Version existiert nicht. / Version does not exists.'.PHP_EOL;
         if (!empty($versions)) {
             print 'Meinten Sie: / Did you mean: '.implode(', ', $versions).PHP_EOL;
         }
     }
+} else {
+    print 'composer create-project gelysis/joomla-installer <project folder>'.PHP_EOL;
 }
 
 print PHP_EOL;
