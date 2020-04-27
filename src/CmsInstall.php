@@ -14,9 +14,39 @@ use Composer\Script\Event;
 class CmsInstall
 {
 
+    /** @var string self::DEFAULT_LANGUAGE */
+    protected const DEFAULT_LANGUAGE = 'en';
+    /** @var string self::INSTALL */
+    protected const INSTALL = 'install';
+    /** @var string self::SUCCESS */
+    protected const SUCCESS = 'success';
+    /** @var string self::NONEXISTS */
+    protected const NONEXISTS = 'nonexists';
+    /** @var string self::SUGGESTIONS */
+    protected const SUGGESTIONS = 'suggest';
+    /** @var string self::FAIL */
+    protected const FAIL = 'fail';
+    /** @var string[][] self::OUTPUT */
+    protected const OUTPUT = [
+        'de' => [
+            self::INSTALL => 'Klone und installiere Joomla CMS ',
+            self::SUCCESS => 'Joomla wurde erfolgreich installiert.'
+                .' Folgen Sie bitte nun den Installationshinweisen in README.md.',
+            self::NONEXISTS => 'Diese Version existiert nicht.',
+            self::SUGGESTIONS => 'Meinten Sie: ',
+            self::FAIL => 'Installation ist fehlgeschlagen.'
+        ],
+        self::DEFAULT_LANGUAGE => [
+            self::INSTALL => 'Cloning and installing Joomla CMS ',
+            self::SUCCESS => 'Joomla has been installed successfully.'
+            .' Please follow the installation instructions in README.md.',
+            self::NONEXISTS => 'Version does not exists.',
+            self::SUGGESTIONS => 'Do you mean: ',
+            self::FAIL => 'Installation failed.'
+        ]
+    ];
     /** @var \Composer\IO\ConsoleIO self::$io */
     protected static $io;
-
 
     /**
      * @param \Composer\Script\Event $event
@@ -26,6 +56,10 @@ class CmsInstall
     {
         self::$io = $event->getIO();
 
+        $languagePart = strstr(\Locale::getDefault(), '_', true);
+        $language = (array_key_exists($languagePart, self::OUTPUT) ? $languagePart : self::DEFAULT_LANGUAGE);
+        $output = self::OUTPUT[$language];
+
         $repository = 'https://github.com/joomla/joomla-cms.git';
         $folder = strstr(substr(strrchr($repository, '/'), 1), '.', true);
         $allVersions = self::getAllVersions($repository);
@@ -34,22 +68,19 @@ class CmsInstall
 
         if (count($versions) === 1) {
             $version = current($versions);
-            self::$io->write('Klone und installiere Joomla CMS '.$version
-                .' / Cloning and installing Joomla CMS '.$version.' ...');
+            self::$io->write($output[self::INSTALL].$version.' ...');
             exec(__DIR__.'/install-cms.sh '.$repository.' '.$version.' '.$folder);
 
             self::adjustComposerJson();
 
-            $message = 'Joomla wurde erfolgreich installiert. Folgen Sie bitte nun den Installationshinweisen in README.md.'
-                .' / Joomla has been successfully installed. Please follow the installation instructions in README.md.';
-            self::$io->write($message);
+            self::$io->write($output[self::SUCCESS]);
         } else {
-            self::$io->write('Diese Version existiert nicht. / Version does not exists.');
+            self::$io->write($output[self::NONEXISTS]);
             if (!empty($versions)) {
-                self::$io->write('Meinten Sie: / Did you mean: '.implode(', ', $versions));
+                self::$io->write($output[self::SUGGESTIONS].implode(', ', $versions));
             }
 
-            self::$io->write('Installation ist fehlgeschlagen.' .' / Installation failed.');
+            self::$io->write($output[self::FAIL]);
         }
     }
 
@@ -64,7 +95,6 @@ class CmsInstall
 
         $command = 'git ls-remote --heads --refs --tags --sort "v:refname" '.$repository.' | sed "s/.*\///"';
         exec($command, $references);
-
 
         foreach ($references as $key => $ref) {
             if (preg_match($semanticVersioning, $ref)) {
