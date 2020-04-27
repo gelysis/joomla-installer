@@ -53,6 +53,8 @@ class CmsInstall
             self::FAIL => 'Installation failed.'
         ]
     ];
+    /** @var string self::CMS_FOLDER */
+    protected const CMS_FOLDER = 'cms';
     /** @var \Composer\IO\ConsoleIO self::$io */
     protected static $io;
     /** @var string[] self::$output */
@@ -71,7 +73,6 @@ class CmsInstall
         self::$output = self::OUTPUT[$language];
 
         $repository = 'https://github.com/joomla/joomla-cms.git';
-        $folder = strstr(substr(strrchr($repository, '/'), 1), '.', true);
         $allVersions = self::getAllVersions($repository);
 
         $versions = self::getFilteredVersions($allVersions);
@@ -80,7 +81,7 @@ class CmsInstall
             $version = current($versions);
 
             self::$io->write(PHP_EOL.self::$output[self::INSTALL].$version.' ...');
-            exec(__DIR__.'/install-cms.sh '.$repository.' '.$version.' '.$folder);
+            exec(__DIR__.'/install-cms.sh '.$repository.' '.$version.' '.self::CMS_FOLDER);
 
             self::$io->write(self::$output[self::CLEANUP]);
             self::adjustComposerJson();
@@ -158,7 +159,7 @@ class CmsInstall
 
         if (file_exists($file) && is_writable($file)) {
             $composerJson = file_get_contents($file);
-            $composerJson = str_replace('"libraries/vendor"', '"joomla-cms/libraries/vendor"', $composerJson);
+            $composerJson = str_replace('"libraries/vendor"', '"'.self::CMS_FOLDER.'/libraries/vendor"', $composerJson);
             file_put_contents($file, $composerJson);
         }
     }
