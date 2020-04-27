@@ -18,8 +18,6 @@ final class CmsInstall
     private const DEFAULT_LANGUAGE = 'en';
     /** @var string self::ASK_VERSION */
     private const ASK_VERSION = 'version';
-    /** @var string self::CLEANUP */
-    private const CLEANUP = 'cleanup';
     /** @var string self::INSTALL */
     private const INSTALL = 'install';
     /** @var string self::SUCCESS */
@@ -34,20 +32,18 @@ final class CmsInstall
     private const OUTPUT = [
         'de' => [
             self::ASK_VERSION => 'Welche Joomla Version möchten Sie installieren',
-            self::INSTALL => 'Klone und installiere Joomla CMS ',
-            self::CLEANUP => 'Beende die Installation ...',
-            self::SUCCESS => 'Joomla wurde erfolgreich installiert.'
-                .' Folgen Sie bitte nun den Installationshinweisen in README.md.',
+            self::INSTALL => 'Klone und installiere Joomla CMS',
+            self::SUCCESS => 'Installiere nun die Programmbibliotheken.'
+                .' Folgen Sie nach Abschluss bitte den Installationshinweisen in README.md.',
             self::NONEXISTS => 'Diese Version existiert nicht.',
             self::SUGGESTIONS => 'Meinten Sie: ',
             self::FAIL => 'Installation ist fehlgeschlagen.'
         ],
         self::DEFAULT_LANGUAGE => [
             self::ASK_VERSION => 'Joomla version',
-            self::INSTALL => 'Cloning and installing Joomla CMS ',
-            self::CLEANUP => 'Finalising set up ...',
-            self::SUCCESS => 'Joomla has been installed successfully.'
-                .' Please follow the installation instructions in README.md.',
+            self::INSTALL => 'Cloning and installing Joomla CMS',
+            self::SUCCESS => 'Installing libraries now.'
+                .' Please follow afterwards the installation instructions in README.md.',
             self::NONEXISTS => 'Version does not exists.',
             self::SUGGESTIONS => 'Do you mean: ',
             self::FAIL => 'Installation failed.'
@@ -81,21 +77,20 @@ final class CmsInstall
         if (count($versions) === 1) {
             $version = current($versions);
 
-            self::$io->write(PHP_EOL.self::$output[self::INSTALL].$version.' ...');
+            self::$io->write(PHP_EOL.rtrim(self::$output[self::INSTALL]).' '.$version.' ...');
             exec(__DIR__.'/install-cms.sh '.$repository.' '.$version.' '.self::CMS_FOLDER);
-
-            self::$io->write(self::$output[self::CLEANUP]);
             self::adjustComposerJson();
 
             self::$io->write(self::$output[self::SUCCESS]);
         } else {
-            self::$io->write(self::$output[self::NONEXISTS]);
+            $message = self::$output[self::NONEXISTS];
             if (!empty($versions)) {
-                self::$io->write(self::$output[self::SUGGESTIONS].implode(', ', $versions));
+                $message .= ' '.self::$output[self::SUGGESTIONS].implode(', ', $versions).'?';
             }
-
-            self::$io->write(self::$output[self::FAIL]);
+            self::$io->write([$message, self::$output[self::FAIL]]);
         }
+
+        self::$io->write('');
     }
 
     /**
@@ -125,22 +120,25 @@ final class CmsInstall
      */
     private static function getFilteredVersions(array $allVersions): array
     {
-        $versions = [];
-        $stableVersion = '#^([0-9]+\.){2}[0-9]+$#';
+        $versions = $stableVersions = [];
 
+        $stableVersion = '#^([0-9]+\.){2}[0-9]+$#';
         foreach ($allVersions as $version) {
             if (preg_match($stableVersion, $version)) {
-                $versions[] = $version;
+                $stableVersions[] = $version;
             }
         }
 
-        $desiredVersion = self::$io->ask(self::$output[self::ASK_VERSION].'('.$version.')?');
+        $latestStable = end($stableVersions);
+        $desiredVersion = self::$io->ask(rtrim(self::$output[self::ASK_VERSION], ':?').' ('.$latestStable.')?');
 
-        if (in_array($desiredVersion, $allVersions)) {
+        if (empty($desiredVersion)) {
+            $versions = [$latestStable];
+
+        } elseif (in_array($desiredVersion, $allVersions)) {
             $versions = [$desiredVersion];
 
-        } elseif (!empty($desiredVersion)) {
-            $versions = [];
+        } else {
             foreach ($allVersions as $version) {
                 if (strpos($version, $desiredVersion) === 0) {
                     $versions[] = $version;
