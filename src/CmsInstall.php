@@ -16,6 +16,10 @@ class CmsInstall
 
     /** @var string self::DEFAULT_LANGUAGE */
     protected const DEFAULT_LANGUAGE = 'en';
+    /** @var string self::ASK_VERSION */
+    protected const ASK_VERSION = 'version';
+    /** @var string self::CLEANUP */
+    protected const CLEANUP = 'cleanup';
     /** @var string self::INSTALL */
     protected const INSTALL = 'install';
     /** @var string self::SUCCESS */
@@ -29,7 +33,9 @@ class CmsInstall
     /** @var string[][] self::OUTPUT */
     protected const OUTPUT = [
         'de' => [
+            self::ASK_VERSION => 'Welche Joomla Version möchten Sie installieren',
             self::INSTALL => 'Klone und installiere Joomla CMS ',
+            self::CLEANUP => 'Beende die Installation ...',
             self::SUCCESS => 'Joomla wurde erfolgreich installiert.'
                 .' Folgen Sie bitte nun den Installationshinweisen in README.md.',
             self::NONEXISTS => 'Diese Version existiert nicht.',
@@ -37,9 +43,11 @@ class CmsInstall
             self::FAIL => 'Installation ist fehlgeschlagen.'
         ],
         self::DEFAULT_LANGUAGE => [
+            self::ASK_VERSION => 'Joomla version',
             self::INSTALL => 'Cloning and installing Joomla CMS ',
+            self::CLEANUP => 'Finalising set up ...',
             self::SUCCESS => 'Joomla has been installed successfully.'
-            .' Please follow the installation instructions in README.md.',
+                .' Please follow the installation instructions in README.md.',
             self::NONEXISTS => 'Version does not exists.',
             self::SUGGESTIONS => 'Do you mean: ',
             self::FAIL => 'Installation failed.'
@@ -47,6 +55,8 @@ class CmsInstall
     ];
     /** @var \Composer\IO\ConsoleIO self::$io */
     protected static $io;
+    /** @var string[] self::$output */
+    protected static $output;
 
     /**
      * @param \Composer\Script\Event $event
@@ -58,7 +68,7 @@ class CmsInstall
 
         $languagePart = strstr(\Locale::getDefault(), '_', true);
         $language = (array_key_exists($languagePart, self::OUTPUT) ? $languagePart : self::DEFAULT_LANGUAGE);
-        $output = self::OUTPUT[$language];
+        self::$output = self::OUTPUT[$language];
 
         $repository = 'https://github.com/joomla/joomla-cms.git';
         $folder = strstr(substr(strrchr($repository, '/'), 1), '.', true);
@@ -68,19 +78,21 @@ class CmsInstall
 
         if (count($versions) === 1) {
             $version = current($versions);
-            self::$io->write($output[self::INSTALL].$version.' ...');
+
+            self::$io->write(PHP_EOL.self::$output[self::INSTALL].$version.' ...');
             exec(__DIR__.'/install-cms.sh '.$repository.' '.$version.' '.$folder);
 
+            self::$io->write(self::$output[self::CLEANUP]);
             self::adjustComposerJson();
 
-            self::$io->write($output[self::SUCCESS]);
+            self::$io->write(self::$output[self::SUCCESS]);
         } else {
-            self::$io->write($output[self::NONEXISTS]);
+            self::$io->write(self::$output[self::NONEXISTS]);
             if (!empty($versions)) {
-                self::$io->write($output[self::SUGGESTIONS].implode(', ', $versions));
+                self::$io->write(self::$output[self::SUGGESTIONS].implode(', ', $versions));
             }
 
-            self::$io->write($output[self::FAIL]);
+            self::$io->write(self::$output[self::FAIL]);
         }
     }
 
@@ -111,23 +123,22 @@ class CmsInstall
      */
     protected static function getFilteredVersions(array $allVersions): array
     {
-        $desiredVersion = self::$io->ask('Joomla version (latest by default): ');
-
         $versions = [];
         $stableVersion = '#^([0-9]+\.){2}[0-9]+$#';
 
-        if (empty($desiredVersion)) {
-            foreach ($allVersions as $version) {
-                if (preg_match($stableVersion, $version)) {
-                    $versions[] = $version;
-                }
+        foreach ($allVersions as $version) {
+            if (preg_match($stableVersion, $version)) {
+                $versions[] = $version;
             }
-            $versions = array_slice($versions, -1);
+        }
 
-        } elseif (in_array($desiredVersion, $allVersions)) {
+        $desiredVersion = self::$io->ask(self::$output[self::ASK_VERSION].'('.$version.')?');
+
+        if (in_array($desiredVersion, $allVersions)) {
             $versions = [$desiredVersion];
 
-        } else {
+        } elseif (!empty($desiredVersion)) {
+            $versions = [];
             foreach ($allVersions as $version) {
                 if (strpos($version, $desiredVersion) === 0) {
                     $versions[] = $version;
@@ -143,7 +154,6 @@ class CmsInstall
      */
     protected static function adjustComposerJson(): void
     {
-        self::$io->write(PHP_EOL.'Beende die Installation ...'.' / Finalising set up ...');
         $file = dirname(__DIR__).'/composer.json';
 
         if (file_exists($file) && is_writable($file)) {
@@ -151,8 +161,6 @@ class CmsInstall
             $composerJson = str_replace('"libraries/vendor"', '"joomla-cms/libraries/vendor"', $composerJson);
             file_put_contents($file, $composerJson);
         }
-
-        self::$io->write(PHP_EOL);
     }
 
 }
