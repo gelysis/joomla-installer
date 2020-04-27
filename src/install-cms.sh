@@ -14,11 +14,11 @@ rm -rf composer.* src vendor $FOLDER/.git
 mv $FOLDER/composer.* ./
 
 cd ./public
-ln -s ../joomla-cms/index.php index.php
-ln -s ../joomla-cms/installation installation
-ln -s ../joomla-cms/media media
-ln -s ../joomla-cms/templates templates
+ln -s ../$FOLDER/index.php index.php
+ln -s ../$FOLDER/installation installation
+ln -s ../$FOLDER/media media
+ln -s ../$FOLDER/templates templates
 
 cd ./administrator
-ln -s ../../joomla-cms/administrator/index.php index.php
-ln -s ../../joomla-cms/administrator/templates templates
+ln -s ../../$FOLDER/administrator/index.php index.php
+ln -s ../../$FOLDER/administrator/templates templates
