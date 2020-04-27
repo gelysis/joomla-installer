@@ -11,27 +11,27 @@ namespace GjInstaller;
 
 use Composer\Script\Event;
 
-class CmsInstall
+final class CmsInstall
 {
 
     /** @var string self::DEFAULT_LANGUAGE */
-    protected const DEFAULT_LANGUAGE = 'en';
+    private const DEFAULT_LANGUAGE = 'en';
     /** @var string self::ASK_VERSION */
-    protected const ASK_VERSION = 'version';
+    private const ASK_VERSION = 'version';
     /** @var string self::CLEANUP */
-    protected const CLEANUP = 'cleanup';
+    private const CLEANUP = 'cleanup';
     /** @var string self::INSTALL */
-    protected const INSTALL = 'install';
+    private const INSTALL = 'install';
     /** @var string self::SUCCESS */
-    protected const SUCCESS = 'success';
+    private const SUCCESS = 'success';
     /** @var string self::NONEXISTS */
-    protected const NONEXISTS = 'nonexists';
+    private const NONEXISTS = 'nonexists';
     /** @var string self::SUGGESTIONS */
-    protected const SUGGESTIONS = 'suggest';
+    private const SUGGESTIONS = 'suggest';
     /** @var string self::FAIL */
-    protected const FAIL = 'fail';
+    private const FAIL = 'fail';
     /** @var string[][] self::OUTPUT */
-    protected const OUTPUT = [
+    private const OUTPUT = [
         'de' => [
             self::ASK_VERSION => 'Welche Joomla Version möchten Sie installieren',
             self::INSTALL => 'Klone und installiere Joomla CMS ',
@@ -54,11 +54,12 @@ class CmsInstall
         ]
     ];
     /** @var string self::CMS_FOLDER */
-    protected const CMS_FOLDER = 'cms';
+    private const CMS_FOLDER = 'cms';
+
     /** @var \Composer\IO\ConsoleIO self::$io */
-    protected static $io;
+    private static $io;
     /** @var string[] self::$output */
-    protected static $output;
+    private static $output;
 
     /**
      * @param \Composer\Script\Event $event
@@ -101,7 +102,7 @@ class CmsInstall
      * @param string $repository
      * @return string[]
      */
-    protected static function getAllVersions(string $repository): array
+    private static function getAllVersions(string $repository): array
     {
         $versions = $references = [];
         $semanticVersioning = '#^([0-9]+\.){1,2}([0-9]+|-[a-z]){2}\w*$#';
@@ -122,7 +123,7 @@ class CmsInstall
      * @param array $allVersions
      * @return string[]
      */
-    protected static function getFilteredVersions(array $allVersions): array
+    private static function getFilteredVersions(array $allVersions): array
     {
         $versions = [];
         $stableVersion = '#^([0-9]+\.){2}[0-9]+$#';
@@ -153,7 +154,7 @@ class CmsInstall
     /**
      * @return void
      */
-    protected static function adjustComposerJson(): void
+    private static function adjustComposerJson(): void
     {
         $file = dirname(__DIR__).'/composer.json';
 
